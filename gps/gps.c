@@ -25,6 +25,7 @@
 #include <sys/epoll.h>
 #include <math.h>
 #include <time.h>
+#include <time64.h>
 #include <signal.h>
 #include <unistd.h>
 
@@ -47,6 +48,7 @@ typedef struct {
 
 static GpsState  _gps_state[1];
 static int    id_in_fixed[12];
+//#define  GPS_DEBUG  1
 
 #define  DFR(...)   ALOGD(__VA_ARGS__)
 
@@ -206,6 +208,7 @@ typedef struct {
     GpsSvStatus sv_status;
     gps_location_callback  callback;
     char    in[ NMEA_MAX_SIZE+1 ];
+    int update;
 } NmeaReader;
 
 
@@ -276,6 +279,7 @@ nmea_reader_init( NmeaReader*  r )
     r->utc_day  = -1;
     r->callback = NULL;
     r->fix.size = sizeof(r->fix);
+    r->update = 0;
 
     nmea_reader_update_utc_diff( r );
 }
@@ -296,37 +300,55 @@ nmea_reader_set_callback( NmeaReader*  r, gps_location_callback  cb )
 static int
 nmea_reader_update_time( NmeaReader*  r, Token  tok )
 {
-    int        hour, minute;
-    double     seconds;
-    struct tm  tm;
-    time_t     fix_time;
+    int hour, minute;
+    double seconds;
+    double milliseconds;
+    struct tm tm;
+    time64_t fix_time;
 
     if (tok.p + 6 > tok.end)
         return -1;
 
     if (r->utc_year < 0) {
         // no date yet, get current one
-        time_t  now = time(NULL);
-        gmtime_r( &now, &tm );
+        time_t now = time(NULL);
+        gmtime_r(&now, &tm);
         r->utc_year = tm.tm_year + 1900;
-        r->utc_mon  = tm.tm_mon + 1;
-        r->utc_day  = tm.tm_mday;
+        r->utc_mon = tm.tm_mon + 1;
+        r->utc_day = tm.tm_mday;
     }
 
-    hour    = str2int(tok.p,   tok.p+2);
-    minute  = str2int(tok.p+2, tok.p+4);
-    seconds = str2float(tok.p+4, tok.end);
+    hour = str2int(tok.p, tok.p + 2);
+    minute = str2int(tok.p + 2, tok.p + 4);
+    seconds = str2float(tok.p + 4, tok.end);
+    milliseconds = seconds * 1000.0;    /* This is seconds + milliseconds */
 
-    tm.tm_hour  = hour;
-    tm.tm_min   = minute;
-    tm.tm_sec   = (int) seconds;
-    tm.tm_year  = r->utc_year - 1900;
-    tm.tm_mon   = r->utc_mon - 1;
-    tm.tm_mday  = r->utc_day;
-    tm.tm_isdst = -1;
+    /* initialize all values inside the tm-struct to 0,
+       otherwise mktime(&tm) will return -1 */
+    memset(&tm, 0, sizeof(tm));
 
-    fix_time = mktime( &tm ) + r->utc_diff;
-    r->fix.timestamp = (long long)fix_time * 1000;
+    tm.tm_hour = hour;
+    tm.tm_min = minute;
+    tm.tm_sec = 0;              /* Don't set seconds; we will add them later (together with milliseconds) */
+    tm.tm_year = r->utc_year - 1900;
+    tm.tm_mon = r->utc_mon - 1;
+    tm.tm_mday = r->utc_day;
+
+    /* We use the timegm64() here, as there is no timegm() in Bionic.
+     * The timesteamp field in the fix is 64-bit anyway, so we don't need
+     * to convert back to 32-bit after this (which would be tricky to get safe).
+     * timegm64() returns seconds since epoch.
+     *
+     * We immediately convert to milliseconds, as that is what is needed
+     * in location fix struct.
+     */
+    fix_time = timegm64(&tm) * 1000LL;
+    /* Now add the seconds+millliseconds */
+    fix_time = fix_time + ((long) milliseconds);
+
+    /* Assign calculated value to fix */
+    r->fix.timestamp = (time64_t) fix_time;
+
     return 0;
 }
 
@@ -631,6 +653,7 @@ nmea_reader_parse( NmeaReader*  r )
         nmea_reader_update_svs( r, svs_inview, msg_number, 2, tok_sv3_prn_num, tok_sv3_elevation, tok_sv3_azimuth, tok_sv3_snr );
         nmea_reader_update_svs( r, svs_inview, msg_number, 3, tok_sv4_prn_num, tok_sv4_elevation, tok_sv4_azimuth, tok_sv4_snr );
         r->sv_status.num_svs=svs_inview;
+        r->sv_status.size = sizeof(r->sv_status);
 
         if (num_messages==msg_number)
             update_gps_svstatus(&r->sv_status);
@@ -657,6 +680,7 @@ nmea_reader_parse( NmeaReader*  r )
 
             nmea_reader_update_bearing( r, tok_bearing );
             nmea_reader_update_speed  ( r, tok_speed );
+            r->update = 1;
         }
     } else if ( !memcmp(tok.p, "VTG", 3) ) {
         Token  tok_fixStatus     = nmea_tokenizer_get(tzer,9);
@@ -702,10 +726,11 @@ nmea_reader_parse( NmeaReader*  r )
         D("%s\n", temp);
     }
 #endif
-    if (r->fix.flags & GPS_LOCATION_HAS_ACCURACY) {
+    if (r->fix.flags & GPS_LOCATION_HAS_ACCURACY && r->update) {
         if (_gps_state->callbacks->location_cb) {
             _gps_state->callbacks->location_cb( &r->fix );
             r->fix.flags = 0;
+            r->update = 0;
         } else {
             D("No callback, keeping data until needed !");
         }
@@ -946,6 +971,9 @@ gps_state_init( GpsState*  state, GpsCallbacks* callbacks )
         D("no kernel-provided gps device name");
         return;
     }
+
+    ALOGE("Waiting GPS device get ready");
+    usleep(10000*1000);
 
     snprintf(device, sizeof(device), "/dev/%s",prop);
     do {
