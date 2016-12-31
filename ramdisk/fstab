@@ -14,8 +14,6 @@
 /dev/block/by-name/android_boot         /boot           emmc    defaults                                                     defaults
 /dev/block/by-name/android_recovery     /recovery       emmc    defaults                                                     defaults
 /dev/block/by-name/android_misc         /misc           emmc    defaults                                                     defaults
-/dev/block/by-name/android_bootloader   /bootloader     emmc    defaults                                                     recoveryonly
-/dev/block/by-name/android_bootloader2  /bootloader2    emmc    defaults                                                     recoveryonly
 /dev/block/by-name/android_persistent   /persistent     emmc    defaults                                                     defaults
 /dev/block/by-name/android_metadata     /metadata       emmc    defaults                                                     defaults
 
@@ -31,7 +29,6 @@
 */block/sdc*                            auto             vfat    defaults                                   voldmanaged=usbdisk3:auto
 */block/sdd*                            auto             vfat    defaults                                   voldmanaged=usbdisk4:auto
 */block/mmcblk1*                        auto             vfat    defaults                                   voldmanaged=sdcard1:auto,noemulatedsd
-/dev/block/mmcblk1p1                    /sdcard          vfat    defaults                                   recoveryonly
 
 ##############################################################
 # Source: device/intel/mixins/groups/swap/zram/fstab
