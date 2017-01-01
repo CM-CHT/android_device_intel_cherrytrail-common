@@ -1,1 +1,2 @@
 allow system_server fuse:dir { search read write };
+allow system_server pstore-clean_data_file:file r_file_perms;
