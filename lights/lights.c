@@ -26,8 +26,6 @@
 
 /******************************************************************************/
 
-const int MAX_BRIGHTNESS_INPUT = 255;
-
 struct backlight_device_t {
     char* name;
     char* backlight_file;
@@ -53,8 +51,8 @@ static struct backlight_device_t backlight_devices[] = {
             "/sys/class/backlight/intel_backlight/brightness",
         .backlight_max_file =
             "/sys/class/backlight/intel_backlight/max_brightness",
-        .brightness_default_max = 4648,
-        .brightness_min_visible = 20
+        .brightness_default_max = 255,
+        .brightness_min_visible = 1
     },
     {
         .name = "ACPI video backlight control",
@@ -161,14 +159,8 @@ static int set_light_backlight(struct light_device_t* dev,
       if (brightness > max_brightness) {
         brightness = max_brightness;
       }
-    } else
-#endif
-    if (brightness) {
-      brightness *= (max_brightness -
-                         cur_backlight_dev->brightness_min_visible);
-      brightness = brightness / MAX_BRIGHTNESS_INPUT +
-                       cur_backlight_dev->brightness_min_visible;
     }
+#endif
 
     fd = open(cur_backlight_dev->backlight_file, O_RDWR);
     if (fd < 0) {
