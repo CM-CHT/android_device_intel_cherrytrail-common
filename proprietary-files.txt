@@ -3,6 +3,7 @@ etc/tuning/audio/layout_topology.xml
 etc/tuning/audio/layout_types.xml
 etc/tuning/audio/layout_ui.xml
 etc/route_criteria.conf
+lib/hw/audio.a2dp.default.so
 lib/hw/audio.codec_offload.cherrytrail.so
 lib/hw/audio.hdmi.gmin.so
 lib/hw/audio.primary.gmin.so
