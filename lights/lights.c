@@ -26,6 +26,8 @@
 
 /******************************************************************************/
 
+const int MAX_BRIGHTNESS_INPUT = 255;
+
 struct backlight_device_t {
     char* name;
     char* backlight_file;
@@ -159,8 +161,11 @@ static int set_light_backlight(struct light_device_t* dev,
       if (brightness > max_brightness) {
         brightness = max_brightness;
       }
-    }
+    } else
 #endif
+    if (brightness) {
+      brightness *= max_brightness / MAX_BRIGHTNESS_INPUT;
+    }
 
     fd = open(cur_backlight_dev->backlight_file, O_RDWR);
     if (fd < 0) {
