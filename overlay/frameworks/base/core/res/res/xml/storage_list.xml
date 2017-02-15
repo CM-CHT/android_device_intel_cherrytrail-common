@@ -36,4 +36,9 @@
         android:storageDescription="@string/storage_usb"
         android:removable="true"
         android:emulated="false" />
+    <storage
+        android:mountPoint="/storage/usbdisk2"
+        android:storageDescription="@string/storage_usb"
+        android:removable="true"
+        android:emulated="false" />
 </StorageList>

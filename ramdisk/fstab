@@ -14,7 +14,5 @@
 /dev/block/by-name/android_config         /config        ext4    noatime,nosuid,nodev,errors=panic                            wait,check
 */block/sda*                              auto           vfat    defaults                                                     voldmanaged=usbdisk:auto
 */block/sdb*                              auto           vfat    defaults                                                     voldmanaged=usbdisk2:auto
-*/block/sdc*                              auto           vfat    defaults                                                     voldmanaged=usbdisk3:auto
-*/block/sdd*                              auto           vfat    defaults                                                     voldmanaged=usbdisk4:auto
 */block/mmcblk1*                          auto           vfat    defaults                                                     voldmanaged=sdcard1:auto,noemulatedsd
 /dev/block/zram0                          none           swap    defaults                                                     zramsize=268435456
