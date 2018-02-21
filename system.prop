@@ -11,3 +11,6 @@ ro.ycbcr.pixel_format=0x10F
 
 # DRM
 drm.service.enabled=true
+
+# GPS
+ro.kernel.android.gps=ttyACM0

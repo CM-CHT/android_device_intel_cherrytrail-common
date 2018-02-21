@@ -58,6 +58,10 @@ ADDITIONAL_DEFAULT_PROPERTIES += \
 ADDITIONAL_DEFAULT_PROPERTIES += \
     ro.frp.pst=/dev/block/by-name/android_persistent
 
+# GPS
+PRODUCT_PACKAGES += \
+    gps.gmin
+
 # Houdini
 ADDITIONAL_BUILD_PROPERTIES += \
     ro.dalvik.vm.isa.arm=x86 \

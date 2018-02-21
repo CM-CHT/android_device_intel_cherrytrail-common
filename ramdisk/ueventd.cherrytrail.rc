@@ -75,3 +75,4 @@
 # Used by WideVine
 /dev/meimm                    0660   system     drmrpc
 # ------------------ END MIX-IN DEFINITIONS ------------------
+/dev/ttyACM0                  0660   system     radio
